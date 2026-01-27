@@ -208,9 +208,15 @@ def forward(Q, p, G, h, A, b, Q_LU, S_LU, R, eps=1e-12, verbose=0, notImprovedLi
 
 
 def get_step(v, dv):
-    a = -v / dv
-    a[dv > 0] = max(1.0, a.max())
-    return a.min(1)[0].squeeze()
+    n_batch = v.size(0)
+    step = torch.ones(n_batch, dtype=v.dtype, device=v.device)
+
+    mask = dv < 0
+    if mask.any():
+        a = torch.where(mask, -v / dv, torch.full_like(v, float("inf")))
+        step = a.min(1)[0].squeeze()
+
+    return step
 
 
 def unpack_kkt(v, nz, nineq, neq):
