@@ -1,14 +1,12 @@
 from enum import Enum
 
 import torch
-from line_profiler import profile
 
 from qpth.util import bdiag, get_sizes
 
 # from block import block
 
 
-@profile
 def lu_hack(x):
     data, pivots = torch.linalg.lu_factor(x, pivot=not x.is_cuda)
 
@@ -55,7 +53,6 @@ class KKTSolvers(Enum):
     IR_UNOPT = 3
 
 
-@profile
 def forward(
     Q,
     p,
@@ -272,13 +269,11 @@ def forward(
     return best["x"], best["y"], best["z"], best["s"]
 
 
-@profile
 def get_step(v, dv):
     a = torch.where(dv < 0, -v / dv, torch.full_like(v, float("inf")))
     return a.amin(dim=1)
 
 
-@profile
 def unpack_kkt(v, nz, nineq, neq):
     i = 0
     x = v[:, i : i + nz]
@@ -291,7 +286,6 @@ def unpack_kkt(v, nz, nineq, neq):
     return x, s, z, y
 
 
-@profile
 def kkt_resid_reg(Q_tilde, D_tilde, G, A, eps, dx, ds, dz, dy, rx, rs, rz, ry):
     dx, ds, dz, dy, rx, rs, rz, ry = [
         x.unsqueeze(2) if x is not None else None
@@ -309,7 +303,6 @@ def kkt_resid_reg(Q_tilde, D_tilde, G, A, eps, dx, ds, dz, dy, rx, rs, rz, ry):
     return resx, ress, resz, resy
 
 
-@profile
 def solve_kkt_ir(Q, D, G, A, rx, rs, rz, ry, niter=1):
     """Inefficient iterative refinement."""
     nineq, nz, neq, nBatch = get_sizes(G, A)
@@ -350,7 +343,6 @@ def solve_kkt_ir(Q, D, G, A, rx, rs, rz, ry, niter=1):
     return dx, ds, dz, dy
 
 
-@profile
 def factor_solve_kkt_reg(Q_tilde, D, G, A, rx, rs, rz, ry, eps):
     nineq, nz, neq, nBatch = get_sizes(G, A)
 
@@ -427,7 +419,6 @@ def factor_solve_kkt_reg(Q_tilde, D, G, A, rx, rs, rz, ry, eps):
     return dx, ds, dz, dy
 
 
-@profile
 def factor_solve_kkt(Q, D, G, A, rx, rs, rz, ry):
     nineq, nz, neq, nBatch = get_sizes(G, A)
 
@@ -483,7 +474,6 @@ def factor_solve_kkt(Q, D, G, A, rx, rs, rz, ry):
     return dx, ds, dz, dy
 
 
-@profile
 def solve_kkt(Q_LU, d, G, A, S_LU, rx, rs, rz, ry):
     """Solve KKT equations for the affine step"""
     nineq, nz, neq, nBatch = get_sizes(G, A)
@@ -515,7 +505,6 @@ def solve_kkt(Q_LU, d, G, A, S_LU, rx, rs, rz, ry):
     return dx, ds, dz, dy
 
 
-@profile
 def pre_factor_kkt(Q, G, A):
     """Perform all one-time factorizations and cache relevant matrix products"""
     nineq, nz, neq, nBatch = get_sizes(G, A)
@@ -581,7 +570,6 @@ a non-zero diagonal.
 factor_kkt_eye = None
 
 
-@profile
 def factor_kkt(S_LU, R, d):
     """Factor the U22 block that we can only do after we know D."""
     nBatch, nineq = d.size()
