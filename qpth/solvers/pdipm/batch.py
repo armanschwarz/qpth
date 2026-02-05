@@ -582,7 +582,7 @@ def factor_kkt(S_LU, R, d):
             nBatch, 1, 1
         )
     T = R.clone()
-    T[factor_kkt_eye] += (1.0 / d).squeeze().view(-1)
+    T.diagonal(dim1=1, dim2=2).add_((1.0 / d).view(nBatch, nineq))
 
     T_LU = lu_hack(T)
 
